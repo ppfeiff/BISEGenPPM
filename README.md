@@ -8,4 +8,5 @@ Relevant files:
 - _data/experiment_logs_: Contains the _.csv_ logs used in the experiment (section 7)
 
 Code to run the benchmark (table 7) will be added later. 
-This code is currently part of another package and has to be extracted from this package first.
+This code is currently part of another package and has to be extracted from this package first. 
+Otherwise, our identity would be disclosed.
