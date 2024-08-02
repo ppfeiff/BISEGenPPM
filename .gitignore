@@ -1,0 +1,32 @@
+
+#Log files
+*.xes_
+*.xes
+*.csv
+
+#Images
+*.png
+*.jpg
+*.jpeg
+*.tif
+*.PNG
+*.JPG
+
+#Pickle files
+*.pkl
+*.pk
+
+#Numpy files
+*.np
+
+#other unneeded files
+*.pdf
+
+#pytorch files
+*.pt
+.vscode/
+
+#Zip etc
+*.zip
+*.tar
+*.gz
