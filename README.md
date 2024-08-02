@@ -7,7 +7,7 @@ Relevant files:
 - _log_generation.py_: Code to generate the logs CF1-5 and ATT1-4 used in the experiment (section 7)
 - _data/experiment_logs_: Contains the _.csv_ logs used in the experiment (section 7)
 
-Put the logs you can download following the DOI given in the paper under data/_log_name_
+Put the logs you can download following the DOI given in the paper in a separate folder under data/_log_name_/_log.csv_
 
 Code to run the benchmark (table 7) will be added later. 
 This code is currently part of another package and has to be extracted from this package first. 
