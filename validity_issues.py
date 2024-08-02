@@ -216,8 +216,6 @@ def train_mppn(el_dset, seed):
     mppn.save_model()
     mppn.load_model()
     test_results = mppn.test()
-    print(test_results.keys())
-    print(test_results["test_accuracy"])
     return test_results["test_accuracy"]
 
 
