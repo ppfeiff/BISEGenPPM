@@ -230,8 +230,8 @@ def compute_metrics_for_all_logs():
     el_bpic17 = load_bpic17()
     el_mobis = load_mobis()
 
-    #dsets = [("bpic12", el_bpic12), ("bpic13", el_bpic13), ("bpic17", el_bpic17), ("helpdesk", el_helpdesk), ("mobis", el_mobis)]
-    dsets = [("bpic12", el_bpic12), ("bpic13", el_bpic13), ("helpdesk", el_helpdesk), ("mobis", el_mobis)]
+    dsets = [("bpic12", el_bpic12), ("bpic13", el_bpic13), ("bpic17", el_bpic17), ("helpdesk", el_helpdesk), ("mobis", el_mobis)]
+    #dsets = [("bpic12", el_bpic12), ("bpic13", el_bpic13), ("helpdesk", el_helpdesk), ("mobis", el_mobis)]
 
     leakages = {}
     max_accuracy = {}
@@ -270,7 +270,7 @@ def compute_metrics_for_all_logs():
 
     pd_results = pd.DataFrame(data=[leakages, max_accuracy, ngram_baseline, mppn])
     print(pd_results)
-    #pd_results.to_csv("all_results.csv", index=False, sep=";")
+    pd_results.to_csv("all_results.csv", index=False, sep=";")
 
     return leakages, max_accuracy, ngram_baseline, mppn
 
@@ -309,7 +309,7 @@ def plot(metrics):
     plt.tight_layout()
     plt.subplots_adjust(wspace=0)
 
-    plt.savefig("validity_issues_v2.png")
+    plt.savefig("validity_issues.png")
     plt.show()
 
 
