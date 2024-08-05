@@ -227,11 +227,13 @@ def compute_metrics_for_all_logs():
     el_helpdesk = load_helpdesk()
     el_bpic12 = load_bpic12()
     el_bpic13 = load_bpic13()
-    el_bpic17 = load_bpic17()
+    #el_bpic17 = load_bpic17()
     el_mobis = load_mobis()
 
-    dsets = [("bpic12", el_bpic12), ("bpic13", el_bpic13), ("bpic17", el_bpic17), ("helpdesk", el_helpdesk), ("mobis", el_mobis)]
-    #dsets = [("bpic12", el_bpic12), ("bpic13", el_bpic13), ("helpdesk", el_helpdesk), ("mobis", el_mobis)]
+    #dsets = [("bpic12", el_bpic12), ("bpic13", el_bpic13), ("bpic17", el_bpic17), ("helpdesk", el_helpdesk), ("mobis", el_mobis)]
+    dsets = [("bpic12", el_bpic12), ("bpic13", el_bpic13), ("helpdesk", el_helpdesk), ("mobis", el_mobis)]
+    #dsets = [("bpic13", el_bpic13), ("helpdesk", el_helpdesk)]
+
 
     leakages = {}
     max_accuracy = {}
@@ -283,15 +285,16 @@ def plot(metrics):
     max_accuracies = metrics[1]
     ngram_baselines = metrics[2]
     mppn = metrics[3]
+    print(leakages)
 
     fig, axs = plt.subplots(1, len(leakages.keys()), figsize=(12, 5), dpi=800, sharey="all")
     axs[0].set_ylim(0, 1)
-    xval = np.linspace(0, 1, len(leakages["Helpdesk"]))
+    xval = np.linspace(0, 1, len(leakages[list(leakages.keys())[0]]))
 
     for log_name, ax in zip(leakages.keys(), axs):
         ax.scatter(xval, leakages[log_name], label="Prefix Leakage", marker="o", c="blue")
         ax.scatter(xval, ngram_baselines[log_name], label="Ngram", marker='s', c="#6baed6")
-        ax.scatter(xval, mppn[log_name], label="MPPN", marker='^', c="#1f77b4")
+        #ax.scatter(xval, mppn[log_name], label="MPPN", marker='^', c="#1f77b4")
         ax.scatter(xval, max_accuracies[log_name], label="Accuracy \nlimit", marker='_', c="red", s=100)
         ax.set_title(log_name, y=-0.1, fontproperties=axs[0].yaxis.label.get_fontproperties())
         ax.set_xlim(-0.15, 1.15)
@@ -322,8 +325,8 @@ if __name__ == '__main__':
     pd.set_option('display.width', 100000)
     pd.set_option('display.max_rows', 500)
 
-    #dset_helpdesk = load_helpdesk()
-    #train_trigram(dset_helpdesk, 1111)
+    #dset = load_bpic12()
+    #train_trigram(dset, 1111)
     #exit(99)
 
 

@@ -38,20 +38,37 @@ class TriGram():
         self.train_log = self.log[self.log[SPLIT_COLUMN] == "TRAIN"]
         self.test_log = self.log[self.log[SPLIT_COLUMN] == "TEST"]
 
-        def build_samples(log):
+
+        def build_samples_train(log):
+            #all samples as we use the padded_everygram_pipeline later
             trace_groupby = log.groupby(CASE_ID)
 
-            prefixes = []
+            samples = []
             for c_id, trace in trace_groupby:
                 cf = trace[EVENT_ID].tolist()
-                for i in range(3, len(trace) + 1): #at least length 2 as prefix
+                samples.append(cf)
+
+            return samples
+
+
+        def build_samples_test(log):
+            #Build all samples analog to MPPN
+            trace_groupby = log.groupby(CASE_ID)
+
+            samples = []
+            for c_id, trace in trace_groupby:
+                cf = trace[EVENT_ID].tolist()
+                for i in range(2, len(trace) + 1):
                     sample = cf[0:i]
-                    prefixes.append(sample)
+                    if len(sample) < 3:
+                        sample = ['<s>'] + sample
+                    samples.append(sample)
 
-            return prefixes
+            return samples
 
-        self.train_log = build_samples(self.train_log)
-        self.test_log = build_samples(self.test_log)
+
+        self.train_log = build_samples_train(self.train_log)
+        self.test_log = build_samples_test(self.test_log)
 
 
         def encode_prefixes(prefixes, act_to_int):
@@ -72,7 +89,7 @@ class TriGram():
         train, vocab = padded_everygram_pipeline(3, self.train_log)
         self.model = KneserNeyInterpolated(order=3)
         self.model.fit(train, vocab)
-        print(f"Vocab: {sorted(self.model.vocab)}")
+        #print(f"Vocab: {sorted(self.model.vocab)}")
 
 
     def test(self):
@@ -80,6 +97,7 @@ class TriGram():
         for sample in self.test_log:
             prefix = sample[-3:-1]
             target = sample[-1]
+            #print(prefix, target)
 
             #log_score = self.model.logscore(word=target[0], context=prefix)  # log base 2
 
@@ -89,7 +107,7 @@ class TriGram():
                 if score > next_step[1]:
                     next_step = (token, score)
 
-            if next_step[0] == target[0]:
+            if next_step[0] == target:
                 correct_predictions += 1
 
         accuracy = correct_predictions / len(self.test_log)
