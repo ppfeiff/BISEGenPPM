@@ -24,8 +24,10 @@ def sample_timestamp(start, end):
 def add_time(a: datetime, b: int):
     return a + timedelta(minutes=b)
 
-prices = rng.integers(10, 1000, 100)
-prices2 = rng.integers(10, 10000, 1000)
+prices = rng.permutation(np.arange(10, 1001))[:100]
+unseen_prices = np.setdiff1d(np.arange(10, 1000), prices)
+prices2 = rng.permutation(np.arange(10, 10001))[:1000]
+unseen_prices2 = np.setdiff1d(np.arange(10, 10001), prices2)
 resources = [f"R{i}" for i in range(1, 101)]
 more_resources = [f"R{i}" for i in range(1, 1001)]
 start_time = datetime.strptime("2015-01-01 09:00", "%Y-%m-%d %H:%M")
@@ -453,7 +455,7 @@ df.to_csv(r"scenario_logs/log_CF3_loop_advanced.csv", index=False)
 
 # Scenario CF4: loop, prediction in loop
 
-# simple: 1 activity, loops up to 5 times
+# simple: 1 activity, loops up to 25 times
 df = pd.DataFrame(columns=["case", "activity", "timestamp", "resource", "price", "case_label"])
 max_loops = 25
 loop_counts = np.array(list(range(1, max_loops + 1)))
@@ -512,7 +514,7 @@ for case_name, case in df.groupby('case'):
 df.to_csv(r"scenario_logs/log_CF4_loop_simple.csv", index=False)
 
 
-# advanced: 2x2 activities, each can loop up to 5 times
+# advanced: 2x2 activities, each can loop up to 10 times
 df = pd.DataFrame(columns=["case", "activity", "timestamp", "resource", "price", "case_label"])
 max_loops = 10
 loop_counts = np.array(list(range(1, max_loops + 1)))
@@ -669,7 +671,7 @@ df.to_csv(r"scenario_logs/log_ATT1_resource_combination_advanced.csv", index=Fal
 
 # simple: new activity + price combination in one event (C), prices 10 - 1000, 100 possible values
 df = pd.DataFrame(columns=["case", "activity", "timestamp", "resource", "price", "case_label"])
-train_prices = rng.choice(prices, int(0.8 * len(prices)), replace=False)    # 80 / 100
+train_prices = rng.choice(prices, int(0.8 * len(prices)), replace=False)    # 800 / 1000
 
 for case in range(1, n_cases + 1):
 
@@ -707,9 +709,9 @@ df["target"] = df["activity"].isin(["D", "E"])
 df.to_csv(r"scenario_logs/log_ATT2_price_combination_simple.csv", index=False)
 
 
-# advanced: new combination of prices in one event (C), prices 10 - 50000, 100 possible values
+# advanced: new combination of prices in one event (C), prices 10 - 10000, 1000 possible values
 df = pd.DataFrame(columns=["case", "activity", "timestamp", "resource", "price", "case_label"])
-train_prices2 = rng.choice(prices2, int(0.8 * len(prices2)), replace=False)     # 800 / 1000
+train_prices2 = rng.choice(prices2, int(0.8 * len(prices2)), replace=False)     # 8000 / 10000
 
 for case in range(1, n_cases + 1):
 
@@ -946,7 +948,7 @@ for case in range(1, n_cases + 1):
     res = rng.choice(resources, n_events)
 
     if rng.random() < 0.2:
-        price[2] += 50
+        price[2] = rng.choice(unseen_prices)
         case_label = "test"
     else:
         case_label = "train"
@@ -987,8 +989,8 @@ for case in range(1, n_cases + 1):
     res = rng.choice(resources, n_events)
 
     if rng.random() < 0.2:
-        price[1] += 50
-        price[2] += 50
+        price[1] = rng.choice(unseen_prices)
+        price[2] = rng.choice(unseen_prices)
         case_label = "test"
     else:
         case_label = "train"
@@ -1001,3 +1003,270 @@ for case in range(1, n_cases + 1):
 df["target"] = df["activity"].isin(["D", "E"])
 df.to_csv(r"scenario_logs/log_ATT4_unseen_price_advanced.csv", index=False)
 
+
+
+
+# Combinations of Scenarios
+
+# 1. Loop + parallel only
+
+df = pd.DataFrame(columns=["case", "activity", "timestamp", "resource", "price", "case_label"])
+
+# all parallel permutations
+branch1 = ["B", "C", "D"]
+branch2 = ["E", "F", "G"]
+branch3 = ["H", "I", "J"]
+
+parallel_perm = all_valid_interleavings([branch1, branch2, branch3])
+rng.shuffle(parallel_perm)
+
+# all loop permutations
+max_loops = 10
+loop_counts = np.array(list(range(1, max_loops + 1)))
+loop_perm = [["K", "L"] * (i + 1) for i in range(max_loops)]
+# noinspection PyTypeChecker
+rng.shuffle(loop_perm)
+
+
+split_idx_parallel = int(0.6 * len(parallel_perm))
+split_idx_loop = int(0.5 * len(loop_perm))
+train_perm_parallel = parallel_perm[:split_idx_parallel]
+test_perm_parallel = parallel_perm[split_idx_parallel:]
+train_perm_loop = loop_perm[:split_idx_loop]
+test_perm_loop = loop_perm[split_idx_loop:]
+
+
+for case in range(1, n_cases + 1):
+
+    activities = ["A"]
+
+    perm_idx_parallel = rng.integers(0, len(parallel_perm))
+    case_permutation_parallel = parallel_perm[perm_idx_parallel]
+    activities.extend(case_permutation_parallel)
+
+    loop_count_idx = rng.integers(0, len(loop_counts))
+    case_loop_count = loop_counts[loop_count_idx]
+    for i in range(case_loop_count):
+        activities.extend(["K", "L"])
+
+    if (perm_idx_parallel >= split_idx_parallel) and (loop_count_idx >= split_idx_loop):
+        case_label = "test"
+    else:
+        case_label = "train"
+
+    activities.extend(["M"])
+    activities.extend(["N"])
+    n_events = len(activities)
+
+    price = rng.choice(prices, n_events)
+
+    if price[-1] < 500:
+        activities.extend(["O"])
+    else:
+        activities.extend(["P"])
+
+    activities.extend(["Q"])
+
+    n_events += 2
+    price = np.concatenate((price, rng.choice(prices, 2)))
+
+    case_start_time = sample_timestamp(start_time, end_time)
+    intervals = rng.uniform(0, 48 * 3600, n_events - 1)
+    time_deltas = pd.to_timedelta(intervals, unit='s')
+    timestamps = [case_start_time]
+    for delta in time_deltas:
+        timestamps.append(timestamps[-1] + delta)
+
+    res = rng.choice(resources, n_events)
+
+    case_df = pd.DataFrame({"case": [case] * n_events, "activity": activities, "timestamp": timestamps, "resource": res,
+                            "price": price, "case_label": [case_label] * n_events})
+
+    df = pd.concat([df, case_df], axis=0)
+
+df["target"] = df["activity"].isin(["N", "O", "P", "Q"])
+df.to_csv(r"scenario_logs/log_combination1_3.csv", index=False)
+
+
+# 2. Loop + parallel + unseen activities / resources
+# Replace 1-5 randomly in the prefix
+
+unseen_resources = ["R995", "R996", "R997", "R998", "R999"]
+
+df = pd.DataFrame(columns=["case", "activity", "timestamp", "resource", "price", "case_label"])
+
+# all parallel permutations
+branch1 = ["B", "C", "D"]
+branch2 = ["E", "F", "G"]
+branch3 = ["H", "I", "J"]
+
+parallel_perm = all_valid_interleavings([branch1, branch2, branch3])
+rng.shuffle(parallel_perm)
+
+# all loop permutations
+max_loops = 10
+loop_counts = np.array(list(range(1, max_loops + 1)))
+loop_perm = [["K", "L"] * (i + 1) for i in range(max_loops)]
+# noinspection PyTypeChecker
+rng.shuffle(loop_perm)
+
+for case in range(1, n_cases + 1):
+
+    activities = ["A"]
+
+    perm_idx_parallel = rng.integers(0, len(parallel_perm))
+    case_permutation_parallel = parallel_perm[perm_idx_parallel]
+    activities.extend(case_permutation_parallel)
+
+    loop_count_idx = rng.integers(0, len(loop_counts))
+    case_loop_count = loop_counts[loop_count_idx]
+    for i in range(case_loop_count):
+        activities.extend(["K", "L"])
+
+    case_label = "test" if rng.random() > 0.8 else "train"
+
+    if case_label == "test":
+        # activity_replace_count = rng.integers(1, 6)
+        # activities = [
+        #     'X' if i in random.sample(range(len(activities)), activity_replace_count) else letter
+        #     for i, letter in enumerate(activities)
+        # ]
+        activities = [
+            'X' if letter in ['B', 'G', 'K'] else letter
+            for letter in activities
+        ]
+
+
+    activities.extend(["M"])
+    activities.extend(["N"])
+    n_events = len(activities)
+
+    price = rng.choice(prices, n_events)
+
+    if price[-1] < 500:
+        activities.extend(["O"])
+    else:
+        activities.extend(["P"])
+
+    activities.extend(["Q"])
+
+    n_events += 2
+    price = np.concatenate((price, rng.choice(prices, 2)))
+
+    case_start_time = sample_timestamp(start_time, end_time)
+    intervals = rng.uniform(0, 48 * 3600, n_events - 1)
+    time_deltas = pd.to_timedelta(intervals, unit='s')
+    timestamps = [case_start_time]
+    for delta in time_deltas:
+        timestamps.append(timestamps[-1] + delta)
+
+    res = rng.choice(resources, n_events)
+    if case_label == "test":
+        resource_replace_count = rng.integers(1, 6)
+        indices_to_replace = random.sample(range(len(res)), resource_replace_count)
+        res = [
+            random.choice(unseen_resources) if i in indices_to_replace else letter
+            for i, letter in enumerate(res)
+        ]
+
+
+    case_df = pd.DataFrame({"case": [case] * n_events, "activity": activities, "timestamp": timestamps, "resource": res,
+                            "price": price, "case_label": [case_label] * n_events})
+
+    df = pd.concat([df, case_df], axis=0)
+
+df["target"] = df["activity"].isin(["N", "O", "P", "Q"])
+df.to_csv(r"scenario_logs/log_combination2_3.csv", index=False)
+
+
+
+# 3. Loop + parallel + unseen activities / resources + unseen price
+# Replace 1-5 randomly in the prefix + unseen price values in the test set
+
+unseen_resources = ["R995", "R996", "R997", "R998", "R999"]
+
+df = pd.DataFrame(columns=["case", "activity", "timestamp", "resource", "price", "case_label"])
+
+# all parallel permutations
+branch1 = ["B", "C", "D"]
+branch2 = ["E", "F", "G"]
+branch3 = ["H", "I", "J"]
+
+parallel_perm = all_valid_interleavings([branch1, branch2, branch3])
+rng.shuffle(parallel_perm)
+
+# all loop permutations
+max_loops = 10
+loop_counts = np.array(list(range(1, max_loops + 1)))
+loop_perm = [["K", "L"] * (i + 1) for i in range(max_loops)]
+# noinspection PyTypeChecker
+rng.shuffle(loop_perm)
+
+for case in range(1, n_cases + 1):
+
+    activities = ["A"]
+
+    perm_idx_parallel = rng.integers(0, len(parallel_perm))
+    case_permutation_parallel = parallel_perm[perm_idx_parallel]
+    activities.extend(case_permutation_parallel)
+
+    loop_count_idx = rng.integers(0, len(loop_counts))
+    case_loop_count = loop_counts[loop_count_idx]
+    for i in range(case_loop_count):
+        activities.extend(["K", "L"])
+
+    case_label = "test" if rng.random() > 0.8 else "train"
+
+    if case_label == "test":
+        # activity_replace_count = rng.integers(1, 6)
+        # activities = [
+        #     'X' if i in random.sample(range(len(activities)), activity_replace_count) else letter
+        #     for i, letter in enumerate(activities)
+        # ]
+        activities = [
+            'X' if letter in ['B', 'G', 'K'] else letter
+            for letter in activities
+        ]
+
+    activities.extend(["M"])
+    activities.extend(["N"])
+    n_events = len(activities)
+
+    price = rng.choice(prices, n_events)
+    if case_label == "test":
+        price[-1] = rng.choice(unseen_prices)
+
+    if price[-1] < 500:
+        activities.extend(["O"])
+    else:
+        activities.extend(["P"])
+
+    activities.extend(["Q"])
+
+    n_events += 2
+    price = np.concatenate((price, rng.choice(prices, 2)))
+
+    case_start_time = sample_timestamp(start_time, end_time)
+    intervals = rng.uniform(0, 48 * 3600, n_events - 1)
+    time_deltas = pd.to_timedelta(intervals, unit='s')
+    timestamps = [case_start_time]
+    for delta in time_deltas:
+        timestamps.append(timestamps[-1] + delta)
+
+    res = rng.choice(resources, n_events)
+    if case_label == "test":
+        resource_replace_count = rng.integers(1, 6)
+        indices_to_replace = random.sample(range(len(res)), resource_replace_count)
+        res = [
+            random.choice(unseen_resources) if i in indices_to_replace else letter
+            for i, letter in enumerate(res)
+        ]
+
+
+    case_df = pd.DataFrame({"case": [case] * n_events, "activity": activities, "timestamp": timestamps, "resource": res,
+                            "price": price, "case_label": [case_label] * n_events})
+
+    df = pd.concat([df, case_df], axis=0)
+
+df["target"] = df["activity"].isin(["O", "P", "Q"])
+df.to_csv(r"scenario_logs/log_combination3_3.csv", index=False)
